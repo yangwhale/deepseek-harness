@@ -14,25 +14,22 @@
 import { basename, extname } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { AttachmentError, AttachmentId } from '@deepseek-ai/dsh-attachment'
-import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
+import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, ToolExecution } from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-fs'
 import { resolveRegularReadTarget } from './read-target.ts'
 
+export type RasterImageMediaType = 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'
+
 /** Extensions `read_image` accepts; magic-byte validation at the attachment service stays authoritative. */
-const IMAGE_EXTENSIONS: Readonly<Record<string, ImageMediaType>> = {
+const IMAGE_EXTENSIONS: Readonly<Record<string, RasterImageMediaType>> = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
   '.gif': 'image/gif',
-  '.pdf': 'application/pdf',
-  '.wav': 'audio/wav',
-  '.ogg': 'audio/ogg',
-  '.mp3': 'audio/mpeg',
-  '.mp4': 'video/mp4',
 }
 
 /** The canonical outcome declared by the `read_image` output schema. */
@@ -40,7 +37,7 @@ export interface ImageReadValue {
   path: string
   image: {
     attachmentId: string
-    mediaType: ImageMediaType
+    mediaType: RasterImageMediaType
     bytes: number
     width: number
     height: number
@@ -53,7 +50,7 @@ export interface ImageReadValue {
  * @param filePath - the raw `file_path` argument (not yet resolved).
  * @returns the declared media type, or undefined when the path does not claim an image.
  */
-export function imageMediaTypeForPath(filePath: string): ImageMediaType | undefined {
+export function imageMediaTypeForPath(filePath: string): RasterImageMediaType | undefined {
   return IMAGE_EXTENSIONS[extname(filePath).toLowerCase()]
 }
 
@@ -115,7 +112,7 @@ ${image.mediaType} image, ${image.width}x${image.height} px, ${image.bytes} byte
  * @param value - the canonical image-read outcome.
  * @returns the two content blocks used by native and nested dispatches.
  */
-export function imageReadContent(value: ImageReadValue): ContentBlock[] {
+function imageReadContent(value: ImageReadValue): ContentBlock[] {
   return [
     { type: 'text', text: formatImageReadOutput(value.path, value.image) },
     { type: 'image', attachment: imageRefFromValue(value.image) },
@@ -134,9 +131,9 @@ export function imageReadContent(value: ImageReadValue): ContentBlock[] {
 export function applyReadImageTool(ctx: Context): void {
   ctx.tools.register(defineTool({
     name: 'read_image',
-    description: 'Read an image (PNG/JPEG/WebP/GIF), document (PDF), or audio file and return its multi-modal content block. Requires the current model to accept multi-modal input.',
+    description: 'Read a PNG/JPEG/WebP/GIF file and return the image itself. Requires the current model to accept image input.',
     parameters: {
-      file_path: { type: 'string', required: true, description: 'Path to the image, document, or audio file, resolved by the filesystem backend.' },
+      file_path: { type: 'string', required: true, description: 'Path to the image file, resolved by the filesystem backend.' },
     },
     output: {
       schema: {
@@ -150,7 +147,7 @@ export function applyReadImageTool(ctx: Context): void {
             required: true,
             properties: {
               attachmentId: { type: 'string', required: true },
-              mediaType: { type: 'string', required: true },
+              mediaType: { type: 'string', enum: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'], required: true },
               bytes: { type: 'integer', required: true },
               width: { type: 'integer', required: true },
               height: { type: 'integer', required: true },
@@ -171,7 +168,7 @@ export function applyReadImageTool(ctx: Context): void {
       // partial reads or attachment writes.
       const mediaType = imageMediaTypeForPath(args.file_path)
       if (mediaType === undefined) {
-        throw new Error(`cannot read "${args.file_path}": read_image only accepts PNG/JPEG/WebP/GIF/PDF/WAV/OGG/MP3 paths`)
+        throw new Error(`cannot read "${args.file_path}": read_image only accepts PNG/JPEG/WebP/GIF paths`)
       }
       const attachments = ctx.get('attachments')
       if (attachments === undefined) {
@@ -206,7 +203,7 @@ export function applyReadImageTool(ctx: Context): void {
         path: target.displayPath,
         image: {
           attachmentId: ref.attachmentId,
-          mediaType: ref.mediaType,
+          mediaType: ref.mediaType as RasterImageMediaType,
           bytes: ref.bytes,
           width: ref.width,
           height: ref.height,
