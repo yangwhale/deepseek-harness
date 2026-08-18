@@ -4,8 +4,19 @@ import type { AttachmentId } from './brand.ts'
 
 export type { AttachmentId } from './brand.ts'
 
-/** Raster image formats accepted by the version-one attachment path. */
-export type ImageMediaType = 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'
+/** Raster image and multi-modal media formats accepted by the attachment path. */
+export type ImageMediaType =
+  | 'image/png'
+  | 'image/jpeg'
+  | 'image/webp'
+  | 'image/gif'
+  | 'application/pdf'
+  | 'audio/wav'
+  | 'audio/ogg'
+  | 'audio/mpeg'
+  | 'audio/mp3'
+  | 'video/mp4'
+  | string
 
 /** Durable, serializable metadata for one immutable image object. */
 export interface ImageAttachmentRef {

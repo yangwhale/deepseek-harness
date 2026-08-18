@@ -28,6 +28,11 @@ const IMAGE_EXTENSIONS: Readonly<Record<string, ImageMediaType>> = {
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
   '.gif': 'image/gif',
+  '.pdf': 'application/pdf',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
+  '.mp3': 'audio/mpeg',
+  '.mp4': 'video/mp4',
 }
 
 /** The canonical outcome declared by the `read_image` output schema. */
@@ -110,7 +115,7 @@ ${image.mediaType} image, ${image.width}x${image.height} px, ${image.bytes} byte
  * @param value - the canonical image-read outcome.
  * @returns the two content blocks used by native and nested dispatches.
  */
-function imageReadContent(value: ImageReadValue): ContentBlock[] {
+export function imageReadContent(value: ImageReadValue): ContentBlock[] {
   return [
     { type: 'text', text: formatImageReadOutput(value.path, value.image) },
     { type: 'image', attachment: imageRefFromValue(value.image) },
@@ -129,9 +134,9 @@ function imageReadContent(value: ImageReadValue): ContentBlock[] {
 export function applyReadImageTool(ctx: Context): void {
   ctx.tools.register(defineTool({
     name: 'read_image',
-    description: 'Read a PNG/JPEG/WebP/GIF file and return the image itself. Requires the current model to accept image input.',
+    description: 'Read an image (PNG/JPEG/WebP/GIF), document (PDF), or audio file and return its multi-modal content block. Requires the current model to accept multi-modal input.',
     parameters: {
-      file_path: { type: 'string', required: true, description: 'Path to the image file, resolved by the filesystem backend.' },
+      file_path: { type: 'string', required: true, description: 'Path to the image, document, or audio file, resolved by the filesystem backend.' },
     },
     output: {
       schema: {
@@ -145,7 +150,7 @@ export function applyReadImageTool(ctx: Context): void {
             required: true,
             properties: {
               attachmentId: { type: 'string', required: true },
-              mediaType: { type: 'string', enum: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'], required: true },
+              mediaType: { type: 'string', required: true },
               bytes: { type: 'integer', required: true },
               width: { type: 'integer', required: true },
               height: { type: 'integer', required: true },
@@ -166,7 +171,7 @@ export function applyReadImageTool(ctx: Context): void {
       // partial reads or attachment writes.
       const mediaType = imageMediaTypeForPath(args.file_path)
       if (mediaType === undefined) {
-        throw new Error(`cannot read "${args.file_path}": read_image only accepts PNG/JPEG/WebP/GIF paths`)
+        throw new Error(`cannot read "${args.file_path}": read_image only accepts PNG/JPEG/WebP/GIF/PDF/WAV/OGG/MP3 paths`)
       }
       const attachments = ctx.get('attachments')
       if (attachments === undefined) {

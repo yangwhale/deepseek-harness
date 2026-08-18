@@ -56,7 +56,18 @@ export class LocalAttachmentStore extends AttachmentStore {
       maxImagesPerMessage: config.maxImagesPerMessage ?? DEFAULT_MAX_IMAGES_PER_MESSAGE,
       maxMessageImageBytes: config.maxMessageImageBytes ?? DEFAULT_MAX_MESSAGE_IMAGE_BYTES,
       maxImagePixels: config.maxImagePixels ?? DEFAULT_MAX_IMAGE_PIXELS,
-      mediaTypes: Object.freeze(['image/png', 'image/jpeg', 'image/webp', 'image/gif'] as const),
+      mediaTypes: Object.freeze([
+        'image/png',
+        'image/jpeg',
+        'image/webp',
+        'image/gif',
+        'application/pdf',
+        'audio/wav',
+        'audio/ogg',
+        'audio/mpeg',
+        'audio/mp3',
+        'video/mp4',
+      ] as const),
     })
   }
 

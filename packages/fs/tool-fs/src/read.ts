@@ -10,7 +10,13 @@ import type { GenericCallView, ReadResultView, ToolResult } from '@deepseek-ai/d
 import type {} from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { buildWindow, formatReadOutput, langFromPath, readMetaFromMeta } from './read-render.ts'
+import { imageMediaTypeForPath, imageReadContent } from './read-image.ts'
+import type { ImageReadValue } from './read-image.ts'
 import { resolveRegularReadTarget } from './read-target.ts'
+
+function isImageReadValue(value: unknown): value is ImageReadValue {
+  return typeof value === 'object' && value !== null && 'image' in value
+}
 
 /** Default and maximum number of lines returned by one `read` call (the `readLimit` config). */
 export const READ_LIMIT = 2000
@@ -104,6 +110,9 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
         },
       },
       render: (args, value) => {
+        if (isImageReadValue(value)) {
+          return imageReadContent(value)
+        }
         const input = parseReadArgs(args, caps.limit)
         const endLine = value.lines.at(-1)?.number ?? Math.max(0, value.offset - 1)
         const truncatedByBytes = value.lines.length < input.limit && endLine < value.totalLines
@@ -121,6 +130,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
       // survives replay: the raw canonical output object is not on the wire, only
       // the model-facing text, from which the line/lang data cannot be recovered.
       presentationMeta: (_args, value) => {
+        if (isImageReadValue(value)) return { path: value.path, offset: 1, lines: [], totalLines: 0 }
         const lang = langFromPath(value.path)
         return {
           path: value.path,
@@ -135,6 +145,17 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
     isConcurrencySafe: () => true,
     async execute(args, exec) {
       const input = parseReadArgs(args, caps.limit)
+      const mediaType = imageMediaTypeForPath(input.filePath)
+      const readImageTool = ctx.tools.get('read_image')
+      if (mediaType !== undefined && readImageTool !== undefined) {
+        return (await readImageTool.execute({ file_path: input.filePath }, exec)) as unknown as {
+          path: string
+          offset: number
+          lines: { number: number; text: string }[]
+          totalLines: number
+        }
+      }
+
       // One stat: absence observation OR type check + size routing + present version.
       // A concurrent write can only make a later guarded mutation fail stale and require reread.
       const { target, info } = await resolveRegularReadTarget(ctx, exec, input.filePath)
