@@ -43,6 +43,16 @@ function ensureReference(ref: ImageAttachmentRef): string {
   return match[1]
 }
 
+function mediaTypesMatch(detected: string, declared: string): boolean {
+  if (detected === declared) return true
+  const aliases: ReadonlyArray<ReadonlySet<string>> = [
+    new Set(['video/mp4', 'video/quicktime']),
+    new Set(['audio/mpeg', 'audio/mp3']),
+    new Set(['audio/mp4', 'audio/m4a']),
+  ]
+  return aliases.some(group => group.has(detected) && group.has(declared))
+}
+
 async function inspectMetadata(
   data: Uint8Array,
   declaredMediaType: ImageAttachmentRef['mediaType'],
@@ -50,8 +60,8 @@ async function inspectMetadata(
 ): Promise<Omit<ImageAttachmentRef, 'attachmentId' | 'name'>> {
   if (data.byteLength === 0) throw new AttachmentError('Image is empty.', 'INVALID_IMAGE')
   const detected = await detectImage(data, maxPixels)
-  if (detected.mediaType !== declaredMediaType) throw new AttachmentError('Declared image type does not match its bytes.', 'IMAGE_TYPE_MISMATCH')
-  return { ...detected, bytes: data.byteLength }
+  if (!mediaTypesMatch(detected.mediaType, declaredMediaType)) throw new AttachmentError('Declared image type does not match its bytes.', 'IMAGE_TYPE_MISMATCH')
+  return { ...detected, mediaType: declaredMediaType, bytes: data.byteLength }
 }
 
 /**

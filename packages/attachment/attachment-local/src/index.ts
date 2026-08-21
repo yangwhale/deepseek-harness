@@ -66,7 +66,11 @@ export class LocalAttachmentStore extends AttachmentStore {
         'audio/ogg',
         'audio/mpeg',
         'audio/mp3',
+        'audio/m4a',
+        'audio/flac',
         'video/mp4',
+        'video/webm',
+        'video/quicktime',
       ] as const),
     })
   }
