@@ -92,12 +92,22 @@ function waitForUpload(operation: SharedUpload, signal: AbortSignal | undefined)
   })
 }
 
-function extension(mediaType: RequestImageAttachment['mediaType']): 'png' | 'jpeg' | 'webp' | 'gif' {
+function extension(mediaType: RequestImageAttachment['mediaType']): string {
   switch (mediaType) {
     case 'image/png': return 'png'
     case 'image/jpeg': return 'jpeg'
     case 'image/webp': return 'webp'
     case 'image/gif': return 'gif'
+    case 'application/pdf': return 'pdf'
+    case 'audio/wav': return 'wav'
+    case 'audio/ogg': return 'ogg'
+    case 'audio/mpeg': case 'audio/mp3': return 'mp3'
+    case 'audio/m4a': return 'm4a'
+    case 'audio/flac': return 'flac'
+    case 'video/mp4': return 'mp4'
+    case 'video/webm': return 'webm'
+    case 'video/quicktime': return 'mov'
+    default: return 'bin'
   }
 }
 

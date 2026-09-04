@@ -18,12 +18,12 @@ function request(overrides: Partial<GenerateOptions> = {}): GenerateOptions {
 }
 
 function imageRef(mediaType: ImageMediaType = 'image/png', bytes = 3): ImageAttachmentRef {
-  const digit = ({
+  const digit = (({
     'image/png': 'a',
     'image/jpeg': 'b',
     'image/webp': 'c',
     'image/gif': 'd',
-  } as const)[mediaType]
+  } as Record<string, string>)[mediaType] ?? 'a')
   return {
     attachmentId: AttachmentId(`sha256:${digit.repeat(64)}`),
     mediaType,

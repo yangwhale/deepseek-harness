@@ -5,7 +5,6 @@ import type { Message } from './message.ts'
 import type {
   AttachmentStore, FileAttachmentRef, ImageAttachmentRef, ImageMediaType, RequestImageAttachment,
 } from '@deepseek-ai/dsh-attachment'
-import { assertNever } from '@deepseek-ai/dsh-util-values'
 
 /** Execution-world path that model tools can use to read one normalized attachment. */
 export interface ImageAttachmentAccess {
@@ -57,7 +56,16 @@ function extension(mediaType: ImageMediaType): string {
     case 'image/jpeg': return '.jpg'
     case 'image/webp': return '.webp'
     case 'image/gif': return '.gif'
-    default: return assertNever(mediaType, 'image extension')
+    case 'application/pdf': return '.pdf'
+    case 'audio/wav': return '.wav'
+    case 'audio/ogg': return '.ogg'
+    case 'audio/mpeg': case 'audio/mp3': return '.mp3'
+    case 'audio/m4a': return '.m4a'
+    case 'audio/flac': return '.flac'
+    case 'video/mp4': return '.mp4'
+    case 'video/webm': return '.webm'
+    case 'video/quicktime': return '.mov'
+    default: return ''
   }
 }
 

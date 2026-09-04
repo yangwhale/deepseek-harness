@@ -18,7 +18,6 @@ import type {
 } from '@deepseek-ai/dsh-api-session-controller/client'
 import type {} from '@deepseek-ai/dsh-client-file-upload/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type {
@@ -581,7 +580,7 @@ export class ConversationController extends Service implements IConversation {
   }
 }
 
-function imageMediaType(value: string): ImageMediaType {
+function imageMediaType(value: string): 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif' {
   switch (value) {
     case 'image/png':
     case 'image/jpeg':

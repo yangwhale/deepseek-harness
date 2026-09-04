@@ -48,11 +48,24 @@ const MEDIA_TYPES: Readonly<Record<string, ImageMediaType>> = {
   gif: 'image/gif',
 }
 
+function nonRasterResult(mediaType: ImageMediaType): DetectedImage {
+  return {
+    mediaType,
+    width: 0,
+    height: 0,
+    animated: false,
+    carriesMetadata: false,
+    depth: 'uchar',
+    space: 'srgb',
+    hasAlpha: false,
+  }
+}
+
 function detectNonRasterMedia(data: Uint8Array): DetectedImage | undefined {
   if (data.length >= 4) {
     // PDF magic bytes: %PDF
     if (data[0] === 0x25 && data[1] === 0x50 && data[2] === 0x44 && data[3] === 0x46) {
-      return { mediaType: 'application/pdf', width: 0, height: 0 }
+      return nonRasterResult('application/pdf')
     }
     // WAV magic bytes: RIFF....WAVE
     if (
@@ -60,40 +73,40 @@ function detectNonRasterMedia(data: Uint8Array): DetectedImage | undefined {
       && data[0] === 0x52 && data[1] === 0x49 && data[2] === 0x46 && data[3] === 0x46
       && data[8] === 0x57 && data[9] === 0x41 && data[10] === 0x56 && data[11] === 0x45
     ) {
-      return { mediaType: 'audio/wav', width: 0, height: 0 }
+      return nonRasterResult('audio/wav')
     }
     // OGG magic bytes: OggS
     if (data[0] === 0x4f && data[1] === 0x67 && data[2] === 0x67 && data[3] === 0x53) {
-      return { mediaType: 'audio/ogg', width: 0, height: 0 }
+      return nonRasterResult('audio/ogg')
     }
     // FLAC magic bytes: fLaC
     if (data[0] === 0x66 && data[1] === 0x4c && data[2] === 0x61 && data[3] === 0x43) {
-      return { mediaType: 'audio/flac', width: 0, height: 0 }
+      return nonRasterResult('audio/flac')
     }
     // WebM / Matroska magic bytes: 0x1A 0x45 0xDF 0xA3
     if (data[0] === 0x1a && data[1] === 0x45 && data[2] === 0xdf && data[3] === 0xa3) {
-      return { mediaType: 'video/webm', width: 0, height: 0 }
+      return nonRasterResult('video/webm')
     }
     // MP3 magic bytes: ID3 or 0xFF, 0xFB / 0xF3 / 0xF2
     const isId3 = data[0] === 0x49 && data[1] === 0x44 && data[2] === 0x33
     const isMpegSync = data[0] === 0xff && data[1] !== undefined && (data[1] & 0xe0) === 0xe0
     if (isId3 || isMpegSync) {
-      return { mediaType: 'audio/mpeg', width: 0, height: 0 }
+      return nonRasterResult('audio/mpeg')
     }
     // MP4 / QuickTime MOV / M4A: ....ftyp
     if (data.length >= 8 && data[4] === 0x66 && data[5] === 0x74 && data[6] === 0x79 && data[7] === 0x70) {
       if (data.length >= 12 && data[8] !== undefined && data[9] !== undefined && data[10] !== undefined && data[11] !== undefined) {
         const brand = String.fromCharCode(data[8], data[9], data[10], data[11])
-        if (brand === 'qt  ') return { mediaType: 'video/quicktime', width: 0, height: 0 }
-        if (brand === 'M4A ' || brand === 'm4a ') return { mediaType: 'audio/mp4', width: 0, height: 0 }
+        if (brand === 'qt  ') return nonRasterResult('video/quicktime')
+        if (brand === 'M4A ' || brand === 'm4a ') return nonRasterResult('audio/mp4')
       }
-      return { mediaType: 'video/mp4', width: 0, height: 0 }
+      return nonRasterResult('video/mp4')
     }
     // QuickTime movie atom headers without ftyp: wide, moov, mdat, free, skip
     if (data.length >= 8 && data[4] !== undefined && data[5] !== undefined && data[6] !== undefined && data[7] !== undefined) {
       const atom = String.fromCharCode(data[4], data[5], data[6], data[7])
       if (atom === 'wide' || atom === 'moov' || atom === 'mdat' || atom === 'free' || atom === 'skip') {
-        return { mediaType: 'video/quicktime', width: 0, height: 0 }
+        return nonRasterResult('video/quicktime')
       }
     }
   }
@@ -109,7 +122,6 @@ function carriesRetainedMetadata(metadata: Awaited<ReturnType<Sharp['metadata']>
     || metadata.tifftagPhotoshop !== undefined
     || metadata.comments !== undefined
     || metadata.orientation !== undefined
-}
 }
 
 async function imageMetadata(image: Sharp): Promise<DetectedImage> {
