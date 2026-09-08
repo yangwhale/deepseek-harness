@@ -1,0 +1,32 @@
+diff --git a/dist/api/google-vertex.js b/dist/api/google-vertex.js
+index 71b489759f10c39842693555019598848fbae141..9297cd8a150d2507deabe9516bc49787a9be2f52 100644
+--- a/dist/api/google-vertex.js
++++ b/dist/api/google-vertex.js
+@@ -305,6 +305,9 @@ function buildHttpOptions(model, optionsHeaders) {
+     return Object.keys(httpOptions).length > 0 ? httpOptions : undefined;
+ }
+ function resolveCustomBaseUrl(baseUrl) {
++    if (!baseUrl) {
++        return undefined;
++    }
+     const trimmed = baseUrl.trim();
+     if (!trimmed || trimmed.includes("{location}")) {
+         return undefined;
+@@ -416,7 +419,7 @@ function getDisabledThinkingConfig(model) {
+         return { thinkingLevel: ThinkingLevel.LOW };
+     }
+     if (isGemini3FlashModel(geminiModel)) {
+-        return { thinkingLevel: ThinkingLevel.MINIMAL };
++        return { thinkingLevel: ThinkingLevel.LOW };
+     }
+     // Gemini 2.x supports disabling via thinkingBudget = 0.
+     return { thinkingBudget: 0 };
+@@ -434,7 +437,7 @@ function getGemini3ThinkingLevel(effort, model) {
+     }
+     switch (effort) {
+         case "minimal":
+-            return "MINIMAL";
++            return "LOW";
+         case "low":
+             return "LOW";
+         case "medium":
